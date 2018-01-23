@@ -64,11 +64,13 @@ class AlexNet(object):
     def load_initial_weights(self, session): 
         # Load the weights 
         weights = np.load(self.WEIGHTS_PATH, encoding='bytes').item()
+        print('Loading weights...')
 
         # Loop over all layer names stored in the weights 
         for op_name in weights: 
             # Check if the layer is one of the layers that should be reinitialized 
             if op_name not in self.SKIP_LAYER: 
+                print(op_name)
                 with tf.variable_scope(op_name, reuse=True):
                     # Loop over list of weights/biases and assign them to their corresponding tf variable 
                     for data in weights[op_name]: 
