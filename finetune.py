@@ -3,13 +3,6 @@
 With this script you can finetune AlexNet as provided in the alexnet.py
 class on any given dataset. Specify the configuration settings at the
 beginning according to your problem.
-This script was written for TensorFlow >= version 1.2rc0 and comes with a blog
-post, which you can find here:
-
-https://kratzert.github.io/2017/02/24/finetuning-alexnet-with-tensorflow.html
-
-Author: Frederik Kratzert
-contact: f.kratzert(at)gmail.com
 """
 
 import os
@@ -130,7 +123,6 @@ for var in var_list:
 
 # Add the loss to summary
 tf.summary.scalar('cross_entropy', loss)
-
 
 # Evaluation op: Accuracy of the model
 with tf.name_scope("accuracy"):
