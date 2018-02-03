@@ -3,7 +3,6 @@ from os import listdir
 from os.path import isfile, join
 
 PATH = './data/cat_vs_dog/'
-DATA_PATH = './data/sets/'
 TRAIN_PARTITION = 0.7 
 VALIDATION_PARTITION = 0.15 
 TEST_PARTITION = 0.15 
@@ -22,7 +21,7 @@ def data_to_textfile(data, type):
         else: 
             line = example + ' 1'
         
-        file.write(DATA_PATH + '%s\n' % line)
+        file.write(PATH + '%s\n' % line)
 
     # Close file. 
     file.close()

@@ -93,8 +93,16 @@ print 'Generated model.'
 # Link variable to model output
 score = model.fc8
 
+# Print trainable variables 
+print('All trainable variables: ')
+print str(tf.trainable_variables())
+
 # List of trainable variables of the layers we want to train
 var_list = [v for v in tf.trainable_variables() if v.name.split('/')[0] in train_layers]
+
+# Variables of layers that are being retrained via transfer learning 
+print('Retrained layers\' variables: ')
+print(str(var_list))
 
 # Op for calculating the loss
 with tf.name_scope("cross_ent"):
