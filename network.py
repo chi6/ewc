@@ -28,6 +28,7 @@ class SimpleCNN(object):
         
         # Create graph of the model 
         self.create_graph()
+        print('Completed constructing graph of SimpleCNN.')
 
     def create_graph(self):
         # First layer 
