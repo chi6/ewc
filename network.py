@@ -49,7 +49,7 @@ class SimpleCNN(object):
         # Softmax (prediction) layer
         sigma = softmax(input=fc1, num_input_units=1024, name='softmax_linear')
     
-    def conv2d(input, filter_height, filter_width, num_filters, stride_y, stride_x, name, padding='SAME'): 
+    def conv2d(self, input, filter_height, filter_width, num_filters, stride_y, stride_x, name, padding='SAME'): 
         # Get number of input channels 
         input_channels = int(input.get_shape()[-1])
 
@@ -71,7 +71,7 @@ class SimpleCNN(object):
             conv = convolve(input, kernel)
             return tf.nn.relu(conv + biases, name=scope.name)
 
-    def max_pool(input, filter_height, filter_width, stride_x, stride_y, padding='SAME', name):
+    def max_pool(self, input, filter_height, filter_width, stride_x, stride_y, padding='SAME', name):
         with tf.variable_scope(name) as scope: 
             pool = tf.nn.max_pool(value=input,
                                   ksize=[1, filter_height, filter_width, 1],
@@ -79,7 +79,7 @@ class SimpleCNN(object):
                                   padding='SAME')
             return pool 
     
-    def fc(input, input_features, num_output_units, name): 
+    def fc(self, input, input_features, num_output_units, name): 
         with tf.variable_scope(name) as scope: 
             # Input feature dimensions: 7 x 7 x 64
             # Number of output units in hidden layer: 1024  
@@ -98,7 +98,7 @@ class SimpleCNN(object):
             fc = tf.nn.dropout(fc, dropout, name='relu_dropout')
             return fc 
 
-    def softmax(input, num_input_units, name): 
+    def softmax(self, input, num_input_units, name): 
         with tf.variable_scope(name) as scope: 
             w = tf.get_variable(name='weights', 
                                 shape=[num_input_units, N_CLASSES],
