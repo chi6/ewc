@@ -101,7 +101,8 @@ class SimpleCNN(object):
     def softmax(input, num_input_units, name): 
         with tf.variable_scope(name) as scope: 
             w = tf.get_variable(name='weights', 
-                                shape=[num_input_units, N_CLASSES],initializer=tf.truncated_normal_initializer())
+                                shape=[num_input_units, N_CLASSES],
+                                initializer=tf.truncated_normal_initializer())
             b = tf.get_variable(name='biases', 
                                 shape=[N_CLASSES], 
                                 initializer=tf.random_normal_initializer())
