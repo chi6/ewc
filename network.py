@@ -11,6 +11,8 @@ class SimpleCNN(object):
         - skip_layer: list of strings, names of the layers you want to reinitialize
         - weights_path: path string, path to the pretrained weights,
                         (if mnist_weights.npy is not in the same folder)
+        
+        MODEL: conv -> relu -> pool -> conv -> relu -> pool -> fully connected -> softmax 
         """    
 
         # Parse input arguments into class variables 
@@ -27,70 +29,59 @@ class SimpleCNN(object):
         # Create graph of the model 
         self.create_graph()
 
-    def create_graph(self): 
-        with tf.variable_scope('conv1') as scope: 
-            # Define kernel parameters. 
-            filter_height = 5 
-            filter_width = 5 
-            input_channels = 1 
-            num_filters = 32 
-            
-            # Reshape the images to [BATCH_SIZE, 28, 28, 1] to make it work with tf.nn.conv2d
-            images = tf.reshape(x, shape=[-1, 28, 28, 1])
-            kernel = tf.get_variable(name='kernel', 
-                                    shape=[filter_height, filter_width, input_channels, num_filters], 
-                                    initializer=tf.truncated_normal_initializer())
-            biases = tf.get_variable(name='biases', 
-                                    shape=[num_filters], 
-                                    initializer=tf.truncated_normal_initializer())
-            conv = tf.nn.conv2d(input=images, 
-                                filter=kernel,
-                                strides=[1, 1, 1, 1], 
-                                padding='SAME')
+    def create_graph(self):
+        # First layer 
+        conv1 = conv2d(self.X, 5, 5, 32, 1, 1, name='conv1', padding='SAME')
+        pool1 = max_pool(conv1, 2, 2, 2, 2, padding='SAME', name='pool1')
+        
+        # Second layer 
+        conv2 = conv2d(self.X, 5, 5, 64, 1, 1, name='conv2', padding='SAME')
+        pool2 = max_pool(conv1, 2, 2, 2, 2, padding='SAME', name='pool2')
 
-            # Output dimensions: BATCH_SIZE x 28 x 28 x 32 
-            conv1 = tf.nn.relu(conv + biases, name=scope.name)
+        # Fully-connected layer 
+        output_shape = int(pool2.get_shape()) 
+        height = int(output_shape[1])
+        width = int(output_shape[2])
+        num_filters = int(output_shape[-1])
+        fc1 = fc(input=pool2, input_features=height*width*num_filters, 1024, name='fc1')
 
-        with tf.variable_scope('pool1') as scope: 
-            # Output dimensions: BATCH_SIZE x 14 x 14 x 32 
-            pool1 = tf.nn.max_pool(value=conv1, 
-                                ksize=[1, 2, 2, 1], 
-                                strides=[1, 2, 2, 1], 
-                                padding='SAME')
+        # Softmax (prediction) layer
+        sigma = softmax(input=fc1, num_input_units=1024, name='softmax_linear')
+    
+    def conv2d(input, filter_height, filter_width, num_filters, stride_y, stride_x, name, padding='SAME'): 
+        # Get number of input channels 
+        input_channels = int(input.get_shape()[-1])
 
-        with tf.variable_scope('conv2') as scope: 
-            # Kernel is now of size 5 x 5 x 32 x 64 
-            filter_height = 5 
-            filter_width = 5 
-            input_channels = 32 
-            num_filters = 64 
+        # Create lambda function for the convolution 
+        convolve = lambda i, k: tf.nn.conv2d(input=i, 
+                                             filter=k,
+                                             strides=[1, stride_y, stride_x, 1],
+                                             padding=padding)
 
+        # Create tf variables for the weights and biases of the conv layer 
+        with tf.variable_scope(name) as scope: 
             kernel = tf.get_variable(name='kernels', 
                                     shape=[filter_height, filter_width, input_channels, num_filters],
                                     initializer=tf.truncated_normal_initializer())
             biases = tf.get_variable(name='biases', 
-                                    shape=[num_filters], 
-                                    initializer=tf.truncated_normal_initializer()
-                                    )
-            conv = tf.nn.conv2d(input=pool1, 
-                                filter=kernel, 
-                                strides=[1, 1, 1, 1], 
-                                padding='SAME')
-            # Output dimensions: BATCH_SIZE x 14 x 14 x 64 
-            conv2 = tf.nn.relu(conv + biases, name=scope.name)
-            
-        with tf.variable_scope('pool2') as scope: 
-            # Output dimensions: BATCH_SIZE x 7 x 7 x 64
-            pool2 = tf.nn.max_pool(value=conv2, 
-                                ksize=[1, 2, 2, 1],
-                                strides=[1, 2, 2, 1], 
-                                padding='SAME')
+                                     shape=[num_filters], 
+                                     initializer=tf.truncated_normal_initializer())
 
-        with tf.variable_scope('fc') as scope: 
+            conv = convolve(input, kernel)
+            return tf.nn.relu(conv + biases, name=scope.name)
+
+    def max_pool(input, filter_height, filter_width, stride_x, stride_y, padding='SAME', name):
+        with tf.variable_scope(name) as scope: 
+            pool = tf.nn.max_pool(value=input,
+                                  ksize=[1, filter_height, filter_width, 1],
+                                  strides=[1, stride_x, stride_y, 1], 
+                                  padding='SAME')
+            return pool 
+    
+    def fc(input, input_features, num_output_units, name): 
+        with tf.variable_scope(name) as scope: 
             # Input feature dimensions: 7 x 7 x 64
-            # Number of output units in hidden layer: 1024   
-            input_features = 7 * 7 * 64
-            num_output_units = 1024   
+            # Number of output units in hidden layer: 1024  
             w = tf.get_variable(name='weights', 
                                 shape=[input_features, num_output_units], 
                                 initializer=tf.truncated_normal_initializer())
@@ -98,19 +89,21 @@ class SimpleCNN(object):
                                 shape=[num_output_units], 
                                 initializer=tf.constant_initializer(0.0))
             
-            # Reshape pool2 to 2-d. 
-            pool2 = tf.reshape(pool2, [-1, input_features])
-            fc = tf.nn.relu(tf.matmul(pool2, w) + b, name='relu') 
+            # Reshape input to 2-d. 
+            input = tf.reshape(input, [-1, input_features])
+            fc = tf.nn.relu(tf.matmul(input, w) + b, name='relu') 
 
             # Apply dropout.
             fc = tf.nn.dropout(fc, dropout, name='relu_dropout')
+            return fc 
 
-        with tf.variable_scope('softmax_linear') as scope: 
-            num_input_units = 1024 
+    def softmax(input, num_input_units, name): 
+        with tf.variable_scope(name) as scope: 
             w = tf.get_variable(name='weights', 
                                 shape=[num_input_units, N_CLASSES],initializer=tf.truncated_normal_initializer())
             b = tf.get_variable(name='biases', 
                                 shape=[N_CLASSES], 
                                 initializer=tf.random_normal_initializer())
-            logits = tf.matmul(fc, w) + b
+            logits = tf.matmul(input, w) + b
+            return logits 
 
