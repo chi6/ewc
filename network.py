@@ -107,5 +107,5 @@ class SimpleCNN(object):
                                 shape=[N_CLASSES], 
                                 initializer=tf.random_normal_initializer())
             logits = tf.matmul(input, w) + b
-            return logits 
+            return logits  
 
