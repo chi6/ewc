@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np 
 
 class SimpleCNN(object): 
-    def __init__(self, x, keep_prob, num_classes, skip_layer, weights_path='DEFAULT'): 
+    def __init__(self, input, dropout, num_classes, skip_layer, weights_path='DEFAULT'): 
         """
         Create the computation graph of a simple CNN model. 
 
@@ -10,16 +10,16 @@ class SimpleCNN(object):
         
         Inputs:
             x: tf.placeholder, for the input images
-            keep_prob: tf.placeholder, for the dropout rate
+            dropout: tf.placeholder, for the dropout rate
             num_classes: int, number of classes of the new dataset
             skip_layer: list of strings, names of the layers you want to reinitialize
             weights_path: path string, path to the pretrained weights, (if mnist_weights.npy is not in the same folder)
         """    
 
         # Parse input arguments into class variables 
-        self.X = x 
+        self.X = input 
         self.NUM_CLASSES = num_classes 
-        self.KEEP_PROB = keep_prob 
+        self.DROPOUT = dropout 
         self.SKIP_LAYER = skip_layer 
 
         if weights_path == 'DEFAULT': 
@@ -37,8 +37,8 @@ class SimpleCNN(object):
         pool1 = max_pool(conv1, 2, 2, 2, 2, padding='SAME', name='pool1')
         
         # Second layer 
-        conv2 = conv2d(self.X, 5, 5, 64, 1, 1, name='conv2', padding='SAME')
-        pool2 = max_pool(conv1, 2, 2, 2, 2, padding='SAME', name='pool2')
+        conv2 = conv2d(pool1, 5, 5, 64, 1, 1, name='conv2', padding='SAME')
+        pool2 = max_pool(conv2, 2, 2, 2, 2, padding='SAME', name='pool2')
 
         # Fully-connected layer 
         output_shape = int(pool2.get_shape()) 
@@ -48,7 +48,7 @@ class SimpleCNN(object):
         fc1 = fc(input=pool2, input_features=height*width*num_filters, 1024, name='fc1')
 
         # Softmax (prediction) layer
-        sigma = softmax(input=fc1, num_input_units=1024, name='softmax_linear')
+        self.sigma = softmax(input=fc1, num_input_units=1024, name='softmax_linear')
     
     def conv2d(self, input, filter_height, filter_width, num_filters, stride_y, stride_x, name, padding='SAME'): 
         # Get number of input channels 
@@ -109,4 +109,7 @@ class SimpleCNN(object):
                                 initializer=tf.random_normal_initializer())
             logits = tf.matmul(input, w) + b
             return logits  
+    
+    def get_scores(self): 
+        return self.sigma 
 
