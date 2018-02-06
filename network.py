@@ -4,15 +4,16 @@ import numpy as np
 class SimpleCNN(object): 
     def __init__(self, x, keep_prob, num_classes, skip_layer, weights_path='DEFAULT'): 
         """
-        Inputs:
-        - x: tf.placeholder, for the input images
-        - keep_prob: tf.placeholder, for the dropout rate
-        - num_classes: int, number of classes of the new dataset
-        - skip_layer: list of strings, names of the layers you want to reinitialize
-        - weights_path: path string, path to the pretrained weights,
-                        (if mnist_weights.npy is not in the same folder)
-        
+        Create the computation graph of a simple CNN model. 
+
         MODEL: conv -> relu -> pool -> conv -> relu -> pool -> fully connected -> softmax 
+        
+        Inputs:
+            x: tf.placeholder, for the input images
+            keep_prob: tf.placeholder, for the dropout rate
+            num_classes: int, number of classes of the new dataset
+            skip_layer: list of strings, names of the layers you want to reinitialize
+            weights_path: path string, path to the pretrained weights, (if mnist_weights.npy is not in the same folder)
         """    
 
         # Parse input arguments into class variables 
