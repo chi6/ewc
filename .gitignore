@@ -1,2 +1,5 @@
 # Distribution 
 data/
+checkpoints/
+graphs/
+*.pyc
