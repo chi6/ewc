@@ -11,6 +11,9 @@ class DataHandler(object):
 		if dataset == 'mnist':
             self.dataset = read_data_sets('./data/mnist/', one_hot=True)
 
+    def get_dataset(self): 
+        return self.dataset
+
     def split_dataset(self, dtype=dtypes.float32, reshape=True, seed=None, validation_size=7000): 
         labels = self.dataset.train.labels  
 

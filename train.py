@@ -10,11 +10,14 @@ import utils
 from tensorflow.examples.tutorials.mnist import input_data
 from network import SimpleCNN
 from model import Model 
+from data_handler import DataHandler 
 
 # Step 1: Read in data.
 # Use TF Learn's built in function to load MNIST data to the folder 'data/mnist/'.  
 print('Loading data...')
-mnist = input_data.read_data_sets('./data/mnist/', one_hot=True)
+# mnist = input_data.read_data_sets('./data/mnist/', one_hot=True)
+data_handler = DataHandler('mnist')
+mnist = data_handler.get_dataset() 
 print('Completed loading data.')
 
 
