@@ -18,6 +18,7 @@ print('Loading data...')
 # mnist = input_data.read_data_sets('./data/mnist/', one_hot=True)
 data_handler = DataHandler('mnist')
 mnist = data_handler.get_dataset() 
+mnist = data_handler.split_dataset() 
 print('Completed loading data.')
 
 
@@ -90,6 +91,7 @@ with tf.Session() as sess:
     # Train the model N_EPOCHS times 
     for index in range(initial_step, num_batches * N_EPOCHS): 
         x_batch, y_batch = mnist.train.next_batch(BATCH_SIZE)
+        
         _, loss_batch, summary = sess.run(
                             [model.optimizer, model.loss, summary_op], 
                             feed_dict={x: x_batch, y: y_batch, dropout: DROPOUT})
