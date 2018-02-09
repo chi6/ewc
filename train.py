@@ -17,19 +17,24 @@ from data_handler import DataHandler
 print('Loading data...')
 # mnist = input_data.read_data_sets('./data/mnist/', one_hot=True)
 data_handler = DataHandler('mnist')
-mnist = data_handler.get_dataset() 
-mnist = data_handler.split_dataset() 
+# mnist = data_handler.get_dataset() 
+mnist, mnist_2 = data_handler.split_dataset() 
+retrain = False
 print('Completed loading data.')
 
+#####################################################################
+#####################################################################
 
 # Step 2: Define parameters for the model. 
 N_CLASSES = 10 
 LEARNING_RATE = 0.001 
-BATCH_SIZE = 128 
+BATCH_SIZE = 32
 SKIP_STEP = 10 
-DROPOUT = 0.75 
+DROPOUT = 0.75
 N_EPOCHS = 1 
 
+#####################################################################
+#####################################################################
 
 # Step 3: Create placeholders for features and labels.
 # Each image is represented as a 1x784 tensor (28*28 pixels = 784 pixels). Define a placeholder for dropout probability. Use 'None' for shape so we can dynamically change the 'batch_size' while building the graph. 
@@ -40,6 +45,9 @@ with tf.name_scope('data'):
 dropout = tf.placeholder(dtype=tf.float32, name='dropout')
 print('Completed defining parameters.')
 
+#####################################################################
+#####################################################################
+
 # Steps 4/5: Create weights and do inference. 
 # MODEL: conv -> relu -> pool -> conv -> relu -> pool -> fully connected -> softmax 
 global_step = tf.Variable(0, dtype=tf.int32, trainable=False, name='global_step')
@@ -47,13 +55,25 @@ global_step = tf.Variable(0, dtype=tf.int32, trainable=False, name='global_step'
 print('Constructing Simple CNN graph...')
 cnn = SimpleCNN(input=x, dropout=dropout, num_classes=N_CLASSES, skip_layer=[''], weights_path='DEFAULT')
 
+#####################################################################
+#####################################################################
+
 # Step 6: Define the loss function. 
 # Use softmax cross entropy with logits as the loss function. Compute mean cross entropy. Note that softmax is applied internally. 
 print('Defining the model')
 model = Model(cnn)
 
 model.cross_entropy_loss(y)
-model.optimizer(learning_rate=LEARNING_RATE, global_step=global_step)
+
+# If retraining the data, select trainable variables 
+var_list = tf.trainable_variables()
+
+if retrain: 
+	train_vars = [var for var in var_list if 'fc1'   in var.name]
+	model.optimizer(learning_rate=LEARNING_RATE, global_step=global_step, train_vars=train_vars)
+	mnist = mnist_2 
+else: 
+	model.optimizer(learning_rate=LEARNING_RATE, global_step=global_step, train_vars=var_list)
 print('Completed defining the model.')
 
 # Define summary of the model 
@@ -66,7 +86,10 @@ with tf.name_scope('summaries'):
 utils.make_dir('checkpoints')
 utils.make_dir('checkpoints/convnet_mnist')
 
-# Step 8: Train/test the model. 
+#####################################################################
+#####################################################################
+
+# Step 7/8: Train/test the model. 
 with tf.Session() as sess:
     # Initialize variables  
     print('Beginning session...')
@@ -78,8 +101,15 @@ with tf.Session() as sess:
     checkpoint = tf.train.get_checkpoint_state(os.path.dirname('checkpoints/convnet_mnist/checkpoint'))
 
     # Restore previous checkpoint, if checkpoint already exists 
-    if checkpoint and checkpoint.model_checkpoint_path: 
-        saver.restore(sess, checkpoint.model_checkpoint_path)
+    # if checkpoint and checkpoint.model_checkpoint_path: 
+    #     saver.restore(sess, checkpoint.model_checkpoint_path)
+
+    # Load previously trained data, if retraining. 
+    if retrain: 
+    	saver.restore(sess, checkpoint.model_checkpoint_path)
+    	print('Retraining the network.')
+    else: 
+    	print('Training the whole network.')
     
     initial_step = global_step.eval()
 

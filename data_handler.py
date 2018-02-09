@@ -18,6 +18,7 @@ class DataHandler(object):
     def split_dataset(self, dtype=dtypes.float32, reshape=True, seed=None, validation_size=7000): 
         labels = self.dataset.train.labels  
 
+        # SPLIT FIRST GROUP (1-4)
         # Find all training images/labels 1-4 
         train_labels_idx = np.nonzero(self.dataset.train.labels)[1]
         train_labels_idx = np.nonzero(train_labels_idx < 5)[0]
@@ -43,4 +44,32 @@ class DataHandler(object):
         validation = DataSet(validation_images, validation_labels, **options)
         test = DataSet(test_images, test_labels, **options)
 
-        return base.Datasets(train=train, validation=validation, test=test)
+        first_dataset = base.Datasets(train=train, validation=validation, test=test)
+
+        # SPLIT SECOND GROUP (5-9)
+        # Find all training images/labels 5-9 
+        train_labels_idx = np.nonzero(self.dataset.train.labels)[1]
+        train_labels_idx = np.nonzero(train_labels_idx >= 5)[0]
+        train_labels_2 = self.dataset.train.labels[train_labels_idx]
+        train_images_2 = self.dataset.train.images[train_labels_idx]
+
+        # Find all testing images/labels 5-9 
+        test_labels_idx = np.nonzero(self.dataset.test.labels)[1]
+        test_labels_idx = np.nonzero(test_labels_idx >= 5)[0]
+        test_labels_2 = self.dataset.test.labels[test_labels_idx] 
+        test_images_2 = self.dataset.test.images[test_labels_idx] 
+
+        # Create validation/training groups 
+        validation_images_2 = train_images_2[:validation_size]
+        validation_labels_2 = train_labels_2[:validation_size]
+        train_images_2 = train_images_2[validation_size:]
+        train_labels_2 = train_labels_2[validation_size:]
+
+        # Define training, validation, and testing datasets  
+        train_2 = DataSet(train_images_2, train_labels_2, **options)
+        validation_2 = DataSet(validation_images_2, validation_labels_2, **options)
+        test_2 = DataSet(test_images_2, test_labels_2, **options)
+
+        second_dataset = base.Datasets(train=train_2, validation=validation_2, test=test_2)
+
+        return first_dataset, second_dataset 

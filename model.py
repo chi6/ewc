@@ -9,6 +9,6 @@ class Model(object):
             entropy = tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=self.classifier.get_scores())
             self.loss = tf.reduce_mean(entropy, name='loss')
     
-    def optimizer(self, learning_rate, global_step): 
+    def optimizer(self, learning_rate, global_step, train_vars): 
         with tf.name_scope('optimize'): 
-            self.optimizer = tf.train.AdamOptimizer(learning_rate).minimize(self.loss, global_step=global_step)
+            self.optimizer = tf.train.AdamOptimizer(learning_rate).minimize(self.loss, global_step=global_step, var_list=train_vars)
