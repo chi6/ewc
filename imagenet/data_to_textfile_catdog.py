@@ -2,7 +2,7 @@ import random
 from os import listdir
 from os.path import isfile, join
 
-PATH = './data/cat_vs_dog/'
+PATH = './data/cat_vs_dog/train/'
 TRAIN_PARTITION = 0.7 
 VALIDATION_PARTITION = 0.15 
 TEST_PARTITION = 0.15 
