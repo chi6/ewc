@@ -83,14 +83,14 @@ class Trainer(object):
 
     def train(self, source): 
         # Train/test the model.
-        with tf.Session() as sess:
+        with tf.Session() as self.sess:
             # Initialize variables
             print('Beginning session...')
-            sess.run(tf.global_variables_initializer())
+            self.sess.run(tf.global_variables_initializer())
             saver = tf.train.Saver()
 
             # Visualize results using Tensorboard
-            writer = tf.summary.FileWriter('./graphs/convnet', sess.graph)
+            writer = tf.summary.FileWriter('./graphs/convnet', self.sess.graph)
             checkpoint = tf.train.get_checkpoint_state(os.path.dirname('checkpoints/convnet_mnist/checkpoint'))
 
             # Restore previous checkpoint, if checkpoint already exists
@@ -99,8 +99,8 @@ class Trainer(object):
 
             # Load previously trained data, if retraining.
             if self.retrain:
-                saver.restore(sess, checkpoint.model_checkpoint_path)
-                sess.run(self.global_step.assign(0))
+                saver.restore(self.sess, checkpoint.model_checkpoint_path)
+                self.sess.run(self.global_step.assign(0))
                 print('Retraining the network.')
             else:
                 print('Training the whole network.')
@@ -116,7 +116,7 @@ class Trainer(object):
             for index in range(initial_step, num_batches * N_EPOCHS):
                 x_batch, y_batch = mnist.train.next_batch(BATCH_SIZE)
 
-                _, loss_batch, summary = sess.run(
+                _, loss_batch, summary = self.sess.run(
                                     [self.model.optimizer, self.model.loss, self.summary_op],
                                     feed_dict={self.x: x_batch,
                                                self.y: y_batch,
@@ -130,7 +130,7 @@ class Trainer(object):
                 if (index + 1) % SKIP_STEP == 0:
                     print('Average loss at step {}: {:5.1f}'.format(index + 1, total_loss/SKIP_STEP))
                     total_loss = 0.0
-                    saver.save(sess, 'checkpoints/convnet_mnist/mnist-convnet', index)
+                    saver.save(self.sess, 'checkpoints/convnet_mnist/mnist-convnet', index)
 
             print('Optimization Finished!')
             print('Total time: {0} seconds'.format(time.time()- start_time))
@@ -154,6 +154,6 @@ class Trainer(object):
             preds = tf.nn.softmax(logits_batch)
             correct_preds = tf.equal(tf.argmax(preds, 1), tf.argmax(y_batch, 1))
             accuracy = tf.reduce_sum(tf.cast(correct_preds, tf.float32))
-            total_correct_preds += sess.run(accuracy)
+            total_correct_preds += self.sess.run(accuracy)
 
         print('Accuracy {0}'.format(total_correct_preds/mnist.test.num_examples))
