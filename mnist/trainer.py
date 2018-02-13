@@ -33,17 +33,23 @@ class Trainer(object):
         with tf.name_scope('data'):
             self.x = tf.placeholder(dtype=tf.float32, shape=[None, 784], name='x_placeholder')
             self.y = tf.placeholder(dtype=tf.float32, shape=[None, 10], name='y_placeholder')
+            self.phase = tf.placeholder(tf.bool, name='phase')
 
-        self.dropout = tf.placeholder(dtype=tf.float32, name='dropout')
-        self.global_step = tf.Variable(0, dtype=tf.int32, trainable=False, name='global_step')
-        print('Completed defining parameters.')
+            self.dropout = tf.placeholder(dtype=tf.float32, name='dropout')
+            self.global_step = tf.Variable(0, dtype=tf.int32, trainable=False, name='global_step')
+            print('Completed defining parameters.')
     
     def construct_graph(self): 
         # Create weights and do inference.
         # MODEL: conv -> relu -> pool -> conv -> relu -> pool -> fully connected -> softmax
 
         print('Constructing Simple CNN graph...')
-        self.cnn = SimpleCNN(input=self.x, dropout=self.dropout, num_classes=N_CLASSES, skip_layer=[''], weights_path='DEFAULT')
+        self.cnn = SimpleCNN(input=self.x, 
+                             phase=self.phase,
+                             dropout=self.dropout,
+                             num_classes=N_CLASSES,
+                             skip_layer=[''],
+                             weights_path='DEFAULT')
     
     def construct_model(self):
         # Define the loss function.
@@ -112,7 +118,10 @@ class Trainer(object):
 
                 _, loss_batch, summary = sess.run(
                                     [self.model.optimizer, self.model.loss, self.summary_op],
-                                    feed_dict={self.x: x_batch, self.y: y_batch, self.dropout: DROPOUT})
+                                    feed_dict={self.x: x_batch,
+                                               self.y: y_batch,
+                                               self.phase: 1,
+                                               self.dropout: DROPOUT})
 
                 writer.add_summary(summary, global_step=index)
                 total_loss += loss_batch
@@ -136,7 +145,10 @@ class Trainer(object):
             x_batch, y_batch = mnist.test.next_batch(BATCH_SIZE)
             _, loss_batch, logits_batch = sess.run(
                                 [self.model.optimizer, self.model.loss, self.model.classifier.get_scores()],
-                                feed_dict={self.x: x_batch, self.y: y_batch, self.dropout: 1.0})
+                                feed_dict={self.x: x_batch, 
+                                           self.y: y_batch,
+                                           self.phase: 0, 
+                                           self.dropout: 1.0})
 
             # Calculate the total correct predictions
             preds = tf.nn.softmax(logits_batch)
