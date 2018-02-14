@@ -14,7 +14,7 @@ from model import Model
 # Define parameters for the model.
 N_CLASSES = 10
 LEARNING_RATE = 0.001
-BATCH_SIZE = 64
+BATCH_SIZE = 128
 SKIP_STEP = 10
 DROPOUT = 0.75
 N_EPOCHS = 1

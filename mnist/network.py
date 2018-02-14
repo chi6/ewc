@@ -52,7 +52,7 @@ class SimpleCNN(object):
         height = int(output_shape[1])
         width = int(output_shape[2])
         num_filters = int(output_shape[-1])
-        fc1 = self.fc(input=pool2, input_features=height*width*num_filters, num_output_units=512, name='fc1')
+        fc1 = self.fc(input=pool2, input_features=height*width*num_filters, num_output_units=1024, name='fc1')
 
         # Softmax (prediction) layer
         self.sigma = self.softmax(input=fc1, num_input_units=512, name='softmax_linear')
@@ -73,11 +73,11 @@ class SimpleCNN(object):
         with tf.variable_scope(name) as scope: 
             kernel = tf.get_variable(name='kernels', 
                                     shape=[filter_height, filter_width, input_channels, num_filters],
-                                    initializer=tf.truncated_normal_initializer())
+                                    initializer=tf.truncated_normal_initializer(stddev=0.02))
             
             biases = tf.get_variable(name='biases', 
                                      shape=[num_filters], 
-                                     initializer=tf.truncated_normal_initializer())
+                                     initializer=tf.constant_initializer(0.0))
             
             conv = tf.nn.conv2d(input=input, 
                                 filter=kernel,
