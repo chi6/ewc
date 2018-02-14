@@ -14,7 +14,7 @@ from model import Model
 # Define parameters for the model.
 N_CLASSES = 10
 LEARNING_RATE = 0.001
-BATCH_SIZE = 128
+BATCH_SIZE = 64
 SKIP_STEP = 10
 DROPOUT = 0.75
 N_EPOCHS = 1
@@ -140,6 +140,7 @@ class Trainer(object):
 
     def test(self, target): 
         # Test the model
+        print('Testing the model...')
         mnist = target 
         num_batches = int(mnist.test.num_examples/BATCH_SIZE)
         total_correct_preds = 0
