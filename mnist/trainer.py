@@ -143,7 +143,7 @@ class Trainer(object):
 
         for i in range(num_batches):
             x_batch, y_batch = mnist.test.next_batch(BATCH_SIZE)
-            _, loss_batch, logits_batch = sess.run(
+            _, loss_batch, logits_batch = self.sess.run(
                                 [self.model.optimizer, self.model.loss, self.model.classifier.get_scores()],
                                 feed_dict={self.x: x_batch, 
                                            self.y: y_batch,
