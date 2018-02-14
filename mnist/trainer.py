@@ -26,6 +26,7 @@ class Trainer(object):
         self.construct_graph() 
         self.construct_model() 
         self.define_summary() 
+        self.sess = tf.Session()
 
     def create_parameters(self):
         # Create placeholders for features and labels.
@@ -81,11 +82,14 @@ class Trainer(object):
         utils.make_dir('checkpoints')
         utils.make_dir('checkpoints/convnet_mnist')
 
+    def restore(self): 
+        saver = tf.train.Saver() 
+        checkpoint = tf.train.get_checkpoint_state(os.path.dirname('checkpoints/convnet_mnist/checkpoint'))
+        saver.restore(self.sess, checkpoint.model_checkpoint_path)
+
     def train(self, source): 
         # Train/test the model.
         # with tf.Session() as self.sess:
-
-        self.sess = tf.Session()
         with self.sess.as_default():  
             # Initialize variables
             print('Beginning session...')
@@ -140,26 +144,26 @@ class Trainer(object):
 
     def test(self, target): 
         # Test the model
-        print('Testing the model...')
-        mnist = target 
-        num_batches = int(mnist.test.num_examples/BATCH_SIZE)
-        total_correct_preds = 0
+        with self.sess.as_default(): 
+            print('Testing the model...')
+            mnist = target 
+            num_batches = int(mnist.test.num_examples/BATCH_SIZE)
+            total_correct_preds = 0
 
-        for i in range(num_batches):
-            x_batch, y_batch = mnist.test.next_batch(BATCH_SIZE)
-            _, loss_batch, logits_batch = self.sess.run(
-                                [self.model.optimizer, self.model.loss, self.model.classifier.get_scores()],
-                                feed_dict={self.x: x_batch, 
-                                           self.y: y_batch,
-                                           self.phase: 0, 
-                                           self.dropout: 1.0})
+            for i in range(num_batches):
+                x_batch, y_batch = mnist.test.next_batch(BATCH_SIZE)
+                _, loss_batch, logits_batch = self.sess.run(
+                                    [self.model.optimizer, self.model.loss, self.model.classifier.get_scores()],
+                                    feed_dict={self.x: x_batch, 
+                                            self.y: y_batch,
+                                            self.phase: 0, 
+                                            self.dropout: 1.0})
 
-            # Calculate the total correct predictions
-            preds = tf.nn.softmax(logits_batch)
-            correct_preds = tf.equal(tf.argmax(preds, 1), tf.argmax(y_batch, 1))
-            accuracy = tf.reduce_sum(tf.cast(correct_preds, tf.float32))
-            total_correct_preds += self.sess.run(accuracy)
+                # Calculate the total correct predictions
+                preds = tf.nn.softmax(logits_batch)
+                correct_preds = tf.equal(tf.argmax(preds, 1), tf.argmax(y_batch, 1))
+                accuracy = tf.reduce_sum(tf.cast(correct_preds, tf.float32))
+                total_correct_preds += self.sess.run(accuracy)
 
-        print('Accuracy {0}'.format(total_correct_preds/mnist.test.num_examples))
-
+            print('Accuracy {0}'.format(total_correct_preds/mnist.test.num_examples))
         self.sess.close() 
