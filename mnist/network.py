@@ -73,11 +73,11 @@ class SimpleCNN(object):
         with tf.variable_scope(name) as scope: 
             kernel = tf.get_variable(name='kernels', 
                                     shape=[filter_height, filter_width, input_channels, num_filters],
-                                    initializer=tf.truncated_normal_initializer(stddev=0.02))
+                                    initializer=tf.truncated_normal_initializer(stddev=0.1))
             
             biases = tf.get_variable(name='biases', 
                                      shape=[num_filters], 
-                                     initializer=tf.constant_initializer(0.0))
+                                     initializer=tf.constant_initializer(0.1))
             
             conv = tf.nn.conv2d(input=input, 
                                 filter=kernel,
