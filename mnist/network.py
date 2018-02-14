@@ -55,7 +55,7 @@ class SimpleCNN(object):
         fc1 = self.fc(input=pool2, input_features=height*width*num_filters, num_output_units=1024, name='fc1')
 
         # Softmax (prediction) layer
-        self.sigma = self.softmax(input=fc1, num_input_units=512, name='softmax_linear')
+        self.sigma = self.softmax(input=fc1, num_input_units=1024, name='softmax_linear')
     
     def batch_normalization(self, input, phase, epsilon=1e-5, momentum=0.9, name="batch_norm"):
         return tf.layers.batch_normalization(inputs=input,
