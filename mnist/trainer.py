@@ -84,58 +84,59 @@ class Trainer(object):
     def train(self, source): 
         # Train/test the model.
         # with tf.Session() as self.sess:
-        
-        self.sess = tf.Session() 
-        # Initialize variables
-        print('Beginning session...')
-        self.sess.run(tf.global_variables_initializer())
-        saver = tf.train.Saver()
 
-        # Visualize results using Tensorboard
-        writer = tf.summary.FileWriter('./graphs/convnet', self.sess.graph)
-        checkpoint = tf.train.get_checkpoint_state(os.path.dirname('checkpoints/convnet_mnist/checkpoint'))
+        self.sess = tf.Session()
+        with self.sess.as_default():  
+            # Initialize variables
+            print('Beginning session...')
+            self.sess.run(tf.global_variables_initializer())
+            saver = tf.train.Saver()
 
-        # Restore previous checkpoint, if checkpoint already exists
-        # if checkpoint and checkpoint.model_checkpoint_path:
-        #     saver.restore(sess, checkpoint.model_checkpoint_path)
+            # Visualize results using Tensorboard
+            writer = tf.summary.FileWriter('./graphs/convnet', self.sess.graph)
+            checkpoint = tf.train.get_checkpoint_state(os.path.dirname('checkpoints/convnet_mnist/checkpoint'))
 
-        # Load previously trained data, if retraining.
-        if self.retrain:
-            saver.restore(self.sess, checkpoint.model_checkpoint_path)
-            self.sess.run(self.global_step.assign(0))
-            print('Retraining the network.')
-        else:
-            print('Training the whole network.')
+            # Restore previous checkpoint, if checkpoint already exists
+            # if checkpoint and checkpoint.model_checkpoint_path:
+            #     saver.restore(sess, checkpoint.model_checkpoint_path)
 
-        initial_step = self.global_step.eval()
-        start_time = time.time()
+            # Load previously trained data, if retraining.
+            if self.retrain:
+                saver.restore(self.sess, checkpoint.model_checkpoint_path)
+                self.sess.run(self.global_step.assign(0))
+                print('Retraining the network.')
+            else:
+                print('Training the whole network.')
 
-        mnist = source 
-        num_batches = int(mnist.train.num_examples / BATCH_SIZE)
-        total_loss = 0.0
+            initial_step = self.global_step.eval()
+            start_time = time.time()
 
-        # Train the model N_EPOCHS times
-        for index in range(initial_step, num_batches * N_EPOCHS):
-            x_batch, y_batch = mnist.train.next_batch(BATCH_SIZE)
+            mnist = source 
+            num_batches = int(mnist.train.num_examples / BATCH_SIZE)
+            total_loss = 0.0
 
-            _, loss_batch, summary = self.sess.run(
-                                [self.model.optimizer, self.model.loss, self.summary_op],
-                                feed_dict={self.x: x_batch,
-                                            self.y: y_batch,
-                                            self.phase: 1,
-                                            self.dropout: DROPOUT})
+            # Train the model N_EPOCHS times
+            for index in range(initial_step, num_batches * N_EPOCHS):
+                x_batch, y_batch = mnist.train.next_batch(BATCH_SIZE)
 
-            writer.add_summary(summary, global_step=index)
-            total_loss += loss_batch
+                _, loss_batch, summary = self.sess.run(
+                                    [self.model.optimizer, self.model.loss, self.summary_op],
+                                    feed_dict={self.x: x_batch,
+                                                self.y: y_batch,
+                                                self.phase: 1,
+                                                self.dropout: DROPOUT})
 
-            # Print out average loss after 10 steps
-            if (index + 1) % SKIP_STEP == 0:
-                print('Average loss at step {}: {:5.1f}'.format(index + 1, total_loss/SKIP_STEP))
-                total_loss = 0.0
-                saver.save(self.sess, 'checkpoints/convnet_mnist/mnist-convnet', index)
+                writer.add_summary(summary, global_step=index)
+                total_loss += loss_batch
 
-        print('Optimization Finished!')
-        print('Total time: {0} seconds'.format(time.time()- start_time))
+                # Print out average loss after 10 steps
+                if (index + 1) % SKIP_STEP == 0:
+                    print('Average loss at step {}: {:5.1f}'.format(index + 1, total_loss/SKIP_STEP))
+                    total_loss = 0.0
+                    saver.save(self.sess, 'checkpoints/convnet_mnist/mnist-convnet', index)
+
+            print('Optimization Finished!')
+            print('Total time: {0} seconds'.format(time.time()- start_time))
 
     def test(self, target): 
         # Test the model
