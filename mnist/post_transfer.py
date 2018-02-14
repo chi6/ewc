@@ -8,7 +8,6 @@ data_handler = DataHandler('mnist')
 mnist, mnist_2 = data_handler.split_dataset() # Train on 1-4
 # mnist_2, mnist = data_handler.split_dataset() # Train on 5-9
 
-# Retrain/test the network on MNIST 5-9
-trainer = Trainer(retrain=True)
-trainer.train(mnist_2) 
-trainer.test(mnist_2) 
+# Test MNIST 0-4 post transfer 
+trainer = Trainer(retrain=True) 
+trainer.test(mnist) 
