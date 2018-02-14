@@ -102,10 +102,10 @@ class SimpleCNN(object):
             # Number of output units in hidden layer: 1024  
             w = tf.get_variable(name='weights', 
                                 shape=[input_features, num_output_units], 
-                                initializer=tf.truncated_normal_initializer())
+                                initializer=tf.truncated_normal_initializer(stddev=0.1))
             b = tf.get_variable(name='biases', 
                                 shape=[num_output_units], 
-                                initializer=tf.constant_initializer(0.0))
+                                initializer=tf.constant_initializer(0.1))
             
             # Reshape input to 2-d. 
             input = tf.reshape(input, [-1, input_features])
@@ -119,10 +119,10 @@ class SimpleCNN(object):
         with tf.variable_scope(name) as scope: 
             w = tf.get_variable(name='weights', 
                                 shape=[num_input_units, self.NUM_CLASSES],
-                                initializer=tf.truncated_normal_initializer())
+                                initializer=tf.truncated_normal_initializer(stddev=0.1))
             b = tf.get_variable(name='biases', 
                                 shape=[self.NUM_CLASSES],
-                                initializer=tf.random_normal_initializer())
+                                initializer=tf.constant_initializer(0.1))
             logits = tf.matmul(input, w) + b
             return logits  
     
