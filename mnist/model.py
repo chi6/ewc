@@ -29,6 +29,11 @@ class Model(object):
             image_idx = np.random.randint(dataset.shape[0])
             print(image_idx)
 
+            if hasattr(self, "variable_list"): 
+                print("Has variables")
+            else: 
+                print("No variables")
+
             # Compute first-order derivatives
             # Consider using log likelihood as an alternative implementation  
             derivatives = sess.run(tf.gradients(tf.log(scores[0, class_ind]), self.variable_list), feed_dict={self.classifier.X: dataset[image_idx:image_idx + 1]})
