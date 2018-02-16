@@ -5,7 +5,7 @@ class Model(object):
     def __init__(self, classifier):
         self.classifier = classifier 
 
-    def compute_fisher(self, dataset, sess, num_samples=200): 
+    def compute_fisher(self, x, dataset, sess, num_samples=200): 
         """
         Compute Fisher information matrix
         """
@@ -31,12 +31,13 @@ class Model(object):
 
             if hasattr(self, "variable_list"): 
                 print("Has variables")
+                print(len(self.variable_list))
             else: 
                 print("No variables")
 
             # Compute first-order derivatives
             # Consider using log likelihood as an alternative implementation  
-            derivatives = sess.run(tf.gradients(tf.log(scores[0, class_ind]), self.variable_list), feed_dict={self.classifier.X: dataset[image_idx:image_idx + 1]})
+            derivatives = sess.run(tf.gradients(tf.log(scores[0, class_ind]), self.variable_list), feed_dict={x: dataset[image_idx:image_idx + 1]})
 
             # Square the derivatives and add to the total 
             for var in range(len(self.F_matrix)):
@@ -47,7 +48,7 @@ class Model(object):
             self.F_matrix[var] /= num_samples 
 
     
-    def save_weights(self):
+    def save_weights(self, sess):
         """
         Save weights after training source task. 
         """
@@ -56,8 +57,9 @@ class Model(object):
         
         self.star_vars = []
 
-        for v in range(len(self.variable_list)):
-            self.star_vars.append(self.variable_list[v].eval())
+        with sess.as_default(): 
+            for v in range(len(self.variable_list)):
+                self.star_vars.append(self.variable_list[v].eval())
     
     def ewc_loss(self, y, star_vars, fisher_multiplier): 
         """
