@@ -1,3 +1,4 @@
+import tensorflow as tf 
 from trainer_ewc import Trainer 
 from data_handler import DataHandler
 

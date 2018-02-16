@@ -43,6 +43,9 @@ class Model(object):
         """
         Save weights after training source task. 
         """
+        if not hasattr(self, "variable_list"): 
+            self.variable_list = tf.trainable_variables() 
+        
         self.star_vars = []
 
         for v in range(len(self.var_list)):
