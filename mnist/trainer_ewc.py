@@ -25,7 +25,7 @@ class Trainer(object):
         self.create_parameters()
         self.construct_graph() 
         self.construct_model() 
-        self.define_summary() 
+        # self.define_summary() 
         self.sess = tf.Session()
 
     def create_parameters(self):
@@ -75,8 +75,8 @@ class Trainer(object):
     def define_summary(self):
         # Define summary of the model
         with tf.name_scope('summaries'):
-            tf.summary.scalar('loss', self.model.loss)
-            tf.summary.histogram('histogram loss', self.model.loss)
+            tf.summary.scalar('loss', self.model.ewc_loss)
+            tf.summary.histogram('histogram loss', self.model.ewc_loss)
             self.summary_op = tf.summary.merge_all()
 
         # Make directories for checkpoints
