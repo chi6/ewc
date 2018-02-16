@@ -5,6 +5,12 @@ class Model(object):
     def __init__(self, classifier):
         self.classifier = classifier 
 
+    
+    def compute_gradients(self, tensor, var_list):
+    	grads = tf.gradients(tensor, var_list)
+    	return [grad if grad is not None else tf.zeros_like(var)
+          for var, grad in zip(var_list, grads)]
+
     def compute_fisher(self, trainer, dataset, sess, num_samples=200): 
         """
         Compute Fisher information matrix
@@ -23,33 +29,17 @@ class Model(object):
         #     trainer.dropout: 0.75, 
         #     trainer.phase: 1})
         # print(results)
-        
+        sess.run(tf.global_variables_initializer())
+
+
         # Sample from a random class from softmax 
         # scores = tf.nn.softmax(self.classifier.get_scores())
         scores = tf.nn.softmax_cross_entropy_with_logits(labels=trainer.y, logits=self.classifier.get_scores())
         # class_ind = tf.to_int32(tf.multinomial(tf.log(scores), 1)
-        # [0][0])
-
-        results = sess.run([scores], feed_dict={
-            trainer.x: dataset.images[0:5],
-            trainer.y: dataset.labels[0:5],
-            trainer.dropout: 0.75, 
-            trainer.phase: 1})
-        print(results)
-
-        # Initialize loss function 
-        # self.cross_entropy_loss(y)
-        # log_likelihood = self.loss 
+        # [0][0]) 
 
         with sess.as_default(): 
-        #     sess.run(tf.global_variables_initializer())
-            # image_idx = np.random.randint(dataset.shape[0])
-            results = sess.run(tf.log(scores), feed_dict={
-            trainer.x: dataset.images[0:5],
-            trainer.y: dataset.labels[0:5],
-            trainer.dropout: 0.75, 
-            trainer.phase: 1})
-            print('log results: %s', results)
+            image_idx = np.random.randint(dataset.shape[0])
 
             # Compute Fisher information matrix 
             for idx in range(num_samples): 
@@ -57,32 +47,33 @@ class Model(object):
                 image_idx = np.random.randint(dataset.images.shape[0])
 
                 # Compute first-order derivatives
-                # Consider using log likelihood as an alternative implementation  
-                derivatives = sess.run(tf.gradients(ys=tf.log(scores), xs=self.variable_list), 
+                # Consider using log likelihood as an alternative implementation 
+                # clipped_gradient = tf.clip_by_value(tf.gradients(ys=tf.log(scores), xs=self.variable_list))
+
+                # with tf.variable_scope("conv1", reuse=True) as scope:
+                #     self.variable_list = tf.get_variable("kernels")
+
+                # gradients = tf.gradients(ys=tf.log(scores), xs=self.variable_list)
+
+                log_likelihood = tf.log(scores)
+                gradients = self.compute_gradients(-log_likelihood, self.variable_list) 
+
+                derivatives = sess.run(gradients, 
                 feed_dict={
-                    trainer.y: dataset.labels[image_idx:image_idx + 5],
-                    trainer.x: dataset.images[image_idx:image_idx + 5], 
+                    trainer.y: dataset.labels[0:5],
+                    trainer.x: dataset.images[0:5], 
                     trainer.phase: 1, 
                     trainer.dropout: 0.75})
-                print(derivatives)
-
-                # gradient_op = tf.gradients(-log_likelihood, self.variable_list)
-
-                # derivatives = sess.run(gradient_op, 
-                # feed_dict={
-                #     y: dataset.labels[image_idx:image_idx + 1],
-                #     trainer.x: dataset.images [image_idx:image_idx + 1], 
-                #     trainer.phase: 0, 
-                #     trainer.dropout: 0.0})
+                # print(derivatives)
 
 
                 # Square the derivatives and add to the total 
-                # for var in range(len(self.F_matrix)):
-                #     self.F_matrix[var] += np.square(derivatives[var])
+                for var in range(len(self.F_matrix)):
+                    self.F_matrix[var] += np.square(derivatives[var])
 
         # Divide by the total number of sample 
-        # for var in range(len(self.F_matrix)): 
-        #     self.F_matrix[var] /= num_samples 
+        for var in range(len(self.F_matrix)): 
+            self.F_matrix[var] /= num_samples 
 
     def save_weights(self, sess):
         """

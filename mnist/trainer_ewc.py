@@ -158,7 +158,7 @@ class Trainer(object):
                                     feed_dict={self.x: x_batch, 
                                             self.y: y_batch,
                                             self.phase: 0, 
-                                            self.dropout: 0.0})
+                                            self.dropout: 1.0})
 
                 # Calculate the total correct predictions
                 preds = tf.nn.softmax(logits_batch)
