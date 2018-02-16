@@ -21,6 +21,8 @@ class Model(object):
         class_ind = tf.to_int32(tf.multinomial(tf.log(scores), 1)[0][0])
         x = tf.placeholder(dtype=tf.float32, shape=[None, 784], name='x_placeholder')
 
+        sess.run(tf.global_variables_initializer())
+        
         # Compute Fisher information matrix 
         for idx in range(num_samples): 
             # Select input image randomly 
@@ -48,8 +50,8 @@ class Model(object):
         
         self.star_vars = []
 
-        for v in range(len(self.var_list)):
-            self.star_vars.append(self.var_list[v].eval())
+        for v in range(len(self.variable_list)):
+            self.star_vars.append(self.variable_list[v].eval())
     
     def ewc_loss(self, y, star_vars, fisher_multiplier): 
         """
