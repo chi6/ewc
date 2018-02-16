@@ -5,7 +5,7 @@ class Model(object):
     def __init__(self, classifier):
         self.classifier = classifier 
 
-    def compute_fisher(self, x, dataset, sess, num_samples=200): 
+    def compute_fisher(self, x, dropout, dataset, sess, num_samples=200): 
         """
         Compute Fisher information matrix
         """
@@ -19,10 +19,13 @@ class Model(object):
         # Sample from a random class from softmax 
         scores = tf.nn.softmax(self.classifier.get_scores())
         class_ind = tf.to_int32(tf.multinomial(tf.log(scores), 1)[0][0])
+        print('Class index: %s', class_ind)
         # x = tf.placeholder(dtype=tf.float32, shape=[None, 784], name='x_placeholder')
 
         with sess.as_default(): 
             sess.run(tf.global_variables_initializer())
+            test = sess.run(tf.log(scores[0, class_ind]), feed_dict={dropout: 0.75}) 
+            print(test)
 
             # Compute Fisher information matrix 
             for idx in range(num_samples): 
@@ -38,7 +41,10 @@ class Model(object):
 
                 # Compute first-order derivatives
                 # Consider using log likelihood as an alternative implementation  
-                derivatives = sess.run(tf.gradients(tf.log(scores[0, class_ind]), self.variable_list), feed_dict={x: dataset[image_idx:image_idx + 1]})
+
+                # derivatives = sess.run(tf.gradients(tf.log(scores[0, class_ind]), self.variable_list), feed_dict={x: dataset[image_idx:image_idx + 1]})
+
+                # log_likelihood = self.cross_entropy_loss(self.classifier.get_scores())
 
                 # Square the derivatives and add to the total 
                 for var in range(len(self.F_matrix)):
