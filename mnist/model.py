@@ -27,6 +27,7 @@ class Model(object):
         for idx in range(num_samples): 
             # Select input image randomly 
             image_idx = np.random.randint(dataset.shape[0])
+            print(image_idx)
 
             # Compute first-order derivatives
             # Consider using log likelihood as an alternative implementation  
