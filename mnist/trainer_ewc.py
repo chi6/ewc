@@ -58,9 +58,8 @@ class Trainer(object):
         print('Defining the model')
         self.model = Model(self.cnn)
 
-        # self.model.cross_entropy_loss(self.y)
-
-        self.model.ewc_loss(self.y, previous_weights, 0)
+    def set_ewc_loss(self):  
+        self.model.ewc_loss(self.y, self.model.star_vars, 0)
 
         # If retraining the data, select trainable variables
         var_list = tf.trainable_variables()

@@ -10,8 +10,8 @@ mnist, mnist_2 = data_handler.split_dataset() # Train on 1-4
 
 # Retrain/test the network on MNIST 5-9
 trainer = Trainer(retrain=True)
-trainer.restore() 
 train.model.compute_fisher(dataset=mnist.validation.images, sess=trainer.sess, num_samples=200)
 trainer.model.save_weights()
+trainer.set_ewc_loss() 
 trainer.train(mnist_2) 
 trainer.test(mnist_2) 

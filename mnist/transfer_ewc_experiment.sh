@@ -8,4 +8,4 @@ python baseline_0-4.py
 python transfer_ewc.py
 
 # 3. Post-transfer: Test retrained network on MNIST 0-4
-python post_transfer.py
+python post_transfer_ewc.py
