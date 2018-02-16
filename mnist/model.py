@@ -1,10 +1,11 @@
 import tensorflow as tf 
+import numpy as np 
 
 class Model(object): 
     def __init__(self, classifier):
         self.classifier = classifier 
 
-    def compute_fisher(self, y, dataset, sess, num_samples=200): 
+    def compute_fisher(self, dataset, sess, num_samples=200): 
         """
         Compute Fisher information matrix
         """
@@ -16,7 +17,7 @@ class Model(object):
             self.F_matrix.append(np.zeros(self.variable_list[var].get_shape().as_list()))
         
         # Sample from a random class from softmax 
-        scores = tf.nn.softmax(y)
+        scores = tf.nn.softmax(self.classifier.get_scores())
         class_ind = tf.to_int32(tf.multinomial(tf.log(scores), 1)[0][0])
         x = tf.placeholder(dtype=tf.float32, shape=[None, 784], name='x_placeholder')
 
@@ -37,11 +38,20 @@ class Model(object):
         for var in range(len(self.F_matrix)): 
             self.F_matrix[var] /= num_samples 
 
+    
+    def save_weights(self):
+        """
+        Save weights after training source task. 
+        """
+        self.star_vars = []
+
+        for v in range(len(self.var_list)):
+            self.star_vars.append(self.var_list[v].eval())
+    
     def ewc_loss(self, y, star_vars, fisher_multiplier): 
         """
         Elastic weight consolidation. 
         """
-
         self.ewc_loss = self.cross_entropy_loss(y)
 
         for var in range(len(self.variable_list)): 
