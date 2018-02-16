@@ -10,6 +10,8 @@ mnist, mnist_2 = data_handler.split_dataset() # Train on 1-4
 
 # Test MNIST 0-4 post transfer
 trainer = Trainer(retrain=True) 
+trainer.restore() 
+trainer.save_weights() 
 trainer.set_ewc_loss() 
 trainer.define_summary() 
 trainer.restore() 
