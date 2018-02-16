@@ -22,50 +22,42 @@ class Model(object):
         for var in range(len(self.variable_list)): 
             self.F_matrix.append(np.zeros(self.variable_list[var].get_shape().as_list()))
 
-        # scores = self.classifier.get_scores() 
-        # results = sess.run(scores, feed_dict={
-        #     trainer.x: dataset.images[0:1],
-        #     trainer.y: dataset.labels[0:1],
-        #     trainer.dropout: 0.75, 
-        #     trainer.phase: 1})
-        # print(results)
         sess.run(tf.global_variables_initializer())
 
 
         # Sample from a random class from softmax 
-        # scores = tf.nn.softmax(self.classifier.get_scores())
-        scores = tf.nn.softmax_cross_entropy_with_logits(labels=trainer.y, logits=self.classifier.get_scores())
-        # class_ind = tf.to_int32(tf.multinomial(tf.log(scores), 1)
-        # [0][0]) 
+        # scores = tf.nn.softmax_cross_entropy_with_logits(labels=trainer.y, logits=self.classifier.get_scores())
+        scores = tf.nn.softmax(self.classifier.get_scores())
+        class_ind = tf.to_int32(tf.multinomial(tf.log(scores), 1)
+        [0][0]) 
 
         with sess.as_default(): 
-            image_idx = np.random.randint(dataset.shape[0])
-
             # Compute Fisher information matrix 
             for idx in range(num_samples): 
                 # Select input image randomly 
                 image_idx = np.random.randint(dataset.images.shape[0])
 
+                results = sess.run(tf.log(scores), 
+                feed_dict={
+                    trainer.y: dataset.labels[image_idx:image_idx + 1],
+                    trainer.x: dataset.images[image_idx:image_idx + 1], 
+                    trainer.phase: 1, 
+                    trainer.dropout: 0.75})
+                # print(results)
+
+
                 # Compute first-order derivatives
                 # Consider using log likelihood as an alternative implementation 
-                # clipped_gradient = tf.clip_by_value(tf.gradients(ys=tf.log(scores), xs=self.variable_list))
-
-                # with tf.variable_scope("conv1", reuse=True) as scope:
-                #     self.variable_list = tf.get_variable("kernels")
-
-                # gradients = tf.gradients(ys=tf.log(scores), xs=self.variable_list)
-
-                log_likelihood = tf.log(scores)
+                class_idx = np.random.randint(10)
+                log_likelihood = tf.log(scores[0, class_ind])
                 gradients = self.compute_gradients(-log_likelihood, self.variable_list) 
 
                 derivatives = sess.run(gradients, 
                 feed_dict={
-                    trainer.y: dataset.labels[0:5],
-                    trainer.x: dataset.images[0:5], 
+                    trainer.y: dataset.labels[image_idx:image_idx + 1],
+                    trainer.x: dataset.images[image_idx:image_idx + 1], 
                     trainer.phase: 1, 
                     trainer.dropout: 0.75})
-                # print(derivatives)
-
 
                 # Square the derivatives and add to the total 
                 for var in range(len(self.F_matrix)):
