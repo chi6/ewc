@@ -12,6 +12,7 @@ mnist, mnist_2 = data_handler.split_dataset() # Train on 1-4
 trainer = Trainer(retrain=True) 
 trainer.restore() 
 trainer.model.save_weights(trainer.sess) 
+trainer.model.compute_fisher(x=trainer.x, dataset=mnist.validation.images, sess=trainer.sess, num_samples=200)
 trainer.set_ewc_loss() 
 trainer.define_summary() 
 trainer.restore() 

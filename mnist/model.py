@@ -21,27 +21,28 @@ class Model(object):
         class_ind = tf.to_int32(tf.multinomial(tf.log(scores), 1)[0][0])
         # x = tf.placeholder(dtype=tf.float32, shape=[None, 784], name='x_placeholder')
 
-        sess.run(tf.global_variables_initializer())
+        with sess.as_default(): 
+            sess.run(tf.global_variables_initializer())
 
-        # Compute Fisher information matrix 
-        for idx in range(num_samples): 
-            # Select input image randomly 
-            image_idx = np.random.randint(dataset.shape[0])
-            print(image_idx)
+            # Compute Fisher information matrix 
+            for idx in range(num_samples): 
+                # Select input image randomly 
+                image_idx = np.random.randint(dataset.shape[0])
+                print(image_idx)
 
-            if hasattr(self, "variable_list"): 
-                print("Has variables")
-                print(len(self.variable_list))
-            else: 
-                print("No variables")
+                if hasattr(self, "variable_list"): 
+                    print("Has variables")
+                    print(len(self.variable_list))
+                else: 
+                    print("No variables")
 
-            # Compute first-order derivatives
-            # Consider using log likelihood as an alternative implementation  
-            derivatives = sess.run(tf.gradients(tf.log(scores[0, class_ind]), self.variable_list), feed_dict={x: dataset[image_idx:image_idx + 1]})
+                # Compute first-order derivatives
+                # Consider using log likelihood as an alternative implementation  
+                derivatives = sess.run(tf.gradients(tf.log(scores[0, class_ind]), self.variable_list), feed_dict={x: dataset[image_idx:image_idx + 1]})
 
-            # Square the derivatives and add to the total 
-            for var in range(len(self.F_matrix)):
-                self.F_matrix[var] += np.square(derivatives[var])
+                # Square the derivatives and add to the total 
+                for var in range(len(self.F_matrix)):
+                    self.F_matrix[var] += np.square(derivatives[var])
 
         # Divide by the total number of sample 
         for var in range(len(self.F_matrix)): 
