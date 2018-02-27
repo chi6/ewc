@@ -19,8 +19,17 @@ SKIP_STEP = 10
 DROPOUT = 0.75
 N_EPOCHS = 1
 
-class Trainer(object): 
-    def __init__(self, retrain):  
+class Trainer(object):
+    def __init__(self, retrain, config):
+        self.config = config
+        # Define parameters for the model.
+        self.N_CLASSES = self.config.n_classes
+        self.LEARNING_RATE = self.config.learning_rate
+        self.BATCH_SIZE = self.config.batch_size
+        self.SKIP_STEP = self.config.skip_step
+        self.DROPOUT = self.config.dropout
+        self.N_EPOCHS = self.config.epoch_step
+
         self.retrain = retrain
         self.create_parameters()
         self.construct_graph() 
@@ -48,7 +57,7 @@ class Trainer(object):
         self.cnn = SimpleCNN(input=self.x, 
                              phase=self.phase,
                              dropout=self.dropout,
-                             num_classes=N_CLASSES,
+                             num_classes=self.N_CLASSES,
                              skip_layer=[''],
                              weights_path='DEFAULT')
     
@@ -56,7 +65,7 @@ class Trainer(object):
         # Define the loss function.
         # Use softmax cross entropy with logits as the loss function. Compute mean cross entropy. Note that softmax is applied internally.
         print('Defining the model')
-        self.model = Model(self.cnn)
+        self.model = Model(self.cnn, config=self.config)
 
     def set_ewc_loss(self):  
         self.model.ewc_loss(self.y, self.model.star_vars, 0)
@@ -66,10 +75,10 @@ class Trainer(object):
 
         if self.retrain:
             self.train_vars = [var for var in var_list if 'fc1'    in var.name]
-            self.model.optimizer_ewc(learning_rate=LEARNING_RATE, global_step=self.global_step, train_vars=self.train_vars)
+            self.model.optimizer_ewc(learning_rate=self.LEARNING_RATE, global_step=self.global_step, train_vars=self.train_vars)
             # mnist = mnist_2
         else:
-            self.model.optimizer_ewc(learning_rate=LEARNING_RATE, global_step=self.global_step, train_vars=var_list)
+            self.model.optimizer_ewc(learning_rate=self.LEARNING_RATE, global_step=self.global_step, train_vars=var_list)
         print('Completed defining the model.')
 
     def define_summary(self):
@@ -117,26 +126,26 @@ class Trainer(object):
             start_time = time.time()
 
             mnist = source 
-            num_batches = int(mnist.train.num_examples / BATCH_SIZE)
+            num_batches = int(mnist.train.num_examples /self.BATCH_SIZE)
             total_loss = 0.0
 
             # Train the model N_EPOCHS times
-            for index in range(initial_step, num_batches * N_EPOCHS):
-                x_batch, y_batch = mnist.train.next_batch(BATCH_SIZE)
+            for index in range(initial_step, num_batches * self.N_EPOCHS):
+                x_batch, y_batch = mnist.train.next_batch(self.BATCH_SIZE)
 
                 _, loss_batch, summary = self.sess.run(
                                     [self.model.optimizer, self.model.ewc_loss, self.summary_op],
                                     feed_dict={self.x: x_batch,
                                                 self.y: y_batch,
                                                 self.phase: 1,
-                                                self.dropout: DROPOUT})
+                                                self.dropout: self.DROPOUT})
 
                 writer.add_summary(summary, global_step=index)
                 total_loss += loss_batch
 
                 # Print out average loss after 10 steps
-                if (index + 1) % SKIP_STEP == 0:
-                    print('Average loss at step {}: {:5.1f}'.format(index + 1, total_loss/SKIP_STEP))
+                if (index + 1) % self.SKIP_STEP == 0:
+                    print('Average loss at step {}: {:5.1f}'.format(index + 1, total_loss/self.SKIP_STEP))
                     total_loss = 0.0
                     saver.save(self.sess, 'checkpoints/convnet_mnist/mnist-convnet', index)
 
@@ -148,11 +157,11 @@ class Trainer(object):
         with self.sess.as_default(): 
             print('Testing the model...')
             mnist = target 
-            num_batches = int(mnist.test.num_examples/BATCH_SIZE)
+            num_batches = int(mnist.test.num_examples/self.BATCH_SIZE)
             total_correct_preds = 0
 
             for i in range(num_batches):
-                x_batch, y_batch = mnist.test.next_batch(BATCH_SIZE)
+                x_batch, y_batch = mnist.test.next_batch(self.BATCH_SIZE)
                 _, loss_batch, logits_batch = self.sess.run(
                                     [self.model.optimizer, self.model.ewc_loss, self.model.classifier.get_scores()],
                                     feed_dict={self.x: x_batch, 

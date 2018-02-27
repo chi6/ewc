@@ -1,6 +1,8 @@
 from tensorflow.contrib.learn.python.learn.datasets.mnist import read_data_sets, DataSet
 from tensorflow.python.framework import dtypes
 from tensorflow.contrib.learn.python.learn.datasets import base
+from tensorflow.contrib.keras import datasets
+from keras.utils import to_categorical
 
 import numpy as np 
 
@@ -11,10 +13,67 @@ class DataHandler(object):
     def set_dataset(self, dataset): 
         if dataset == 'mnist':
             self.dataset = read_data_sets('./data/mnist/', one_hot=True)
+        elif dataset == 'cifar100':
+            self.dataset = datasets.cifar100.load_data(label_mode='fine')
     
     def get_dataset(self): 
         return self.dataset
 
+    def split_cifar100(self, dtype=dtypes.float32, reshape=True, seed=None, validation_size=100):
+        (x_train, y_train), (x_test, y_test) = self.dataset
+        y_train = to_categorical(y_train,100)
+        y_test = to_categorical(y_test,100)
+        # SPLIT FIRST GROUP (class 0,beaver) from aquatic mammals
+        # Find all training images/labels 0
+        train_labels_idx = (y_train==to_categorical([0],100))[:,0]
+        train_labels = y_train[train_labels_idx]
+        train_images = x_train[train_labels_idx]
+
+        # Find all testing images/labels 0
+        test_labels_idx = (y_test==to_categorical([0],100))[:,0]
+        test_labels = y_test[test_labels_idx]
+        test_images = x_test[test_labels_idx]
+
+        # Create validation/training groups
+        validation_images = train_images[:validation_size]
+        validation_labels = train_labels[:validation_size]
+        train_images = train_images[validation_size:]
+        train_labels = train_labels[validation_size:]
+
+        options = dict(dtype=dtype, reshape=False, seed=seed)
+
+        # Define training, validation, and testing datasets
+        train = DataSet(train_images, train_labels, **options)
+        validation = DataSet(validation_images, validation_labels, **options)
+        test = DataSet(test_images, test_labels, **options)
+
+        first_dataset = base.Datasets(train=train, validation=validation, test=test)
+
+        # SPLIT second GROUP (class 1,dolphin) from aquatic mammals
+        # Find all training images/labels 0
+        train_labels_idx = (y_train == 1)[:, 0]
+        train_labels_2 = y_train[train_labels_idx]
+        train_images_2 = x_train[train_labels_idx]
+
+        # Find all testing images/labels 1
+        test_labels_idx = (y_test == 1)[:, 0]
+        test_labels_2 = y_test[test_labels_idx]
+        test_images_2 = x_test[test_labels_idx]
+
+        # Create validation/training groups
+        validation_images_2 = train_images_2[:validation_size]
+        validation_labels_2 = train_labels_2[:validation_size]
+        train_images_2 = train_images_2[validation_size:]
+        train_labels_2 = train_labels_2[validation_size:]
+
+        # Define training, validation, and testing datasets
+        train_2 = DataSet(train_images_2, train_labels_2, **options)
+        validation_2 = DataSet(validation_images_2, validation_labels_2, **options)
+        test_2 = DataSet(test_images_2, test_labels_2, **options)
+
+        second_dataset = base.Datasets(train=train_2, validation=validation_2, test=test_2)
+
+        return first_dataset,second_dataset
     def split_dataset(self, dtype=dtypes.float32, reshape=True, seed=None, validation_size=7000): 
         labels = self.dataset.train.labels  
 

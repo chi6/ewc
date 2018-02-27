@@ -3,13 +3,15 @@ from __future__ import division
 from __future__ import print_function
 
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import time
 import tensorflow as tf
 import utils
 from tensorflow.examples.tutorials.mnist import input_data
 from network import SimpleCNN
 from model import Model
+
 
 # Define parameters for the model.
 
@@ -27,61 +29,49 @@ class Trainer(object):
 
         self.retrain = retrain
         self.create_parameters()
-        self.construct_graph() 
-        self.construct_model() 
-        self.define_summary() 
+        self.construct_graph()
+        self.construct_model()
+        self.define_summary()
         self.sess = tf.Session()
 
     def create_parameters(self):
         # Create placeholders for features and labels.
-        if self.config.dataset == 'mnist':
-            # Each image is represented as a 1x784 tensor (28*28 pixels = 784 pixels). Define a placeholder for dropout probability. Use 'None' for shape so we can dynamically change the 'batch_size' while building the graph.
-            with tf.name_scope('data'):
-                self.x = tf.placeholder(dtype=tf.float32, shape=[None, 784], name='x_placeholder')
-                self.y = tf.placeholder(dtype=tf.float32, shape=[None, 10], name='y_placeholder')
-                self.phase = tf.placeholder(tf.bool, name='phase')
+        # Each image is represented as a 1x784 tensor (28*28 pixels = 784 pixels). Define a placeholder for dropout probability. Use 'None' for shape so we can dynamically change the 'batch_size' while building the graph.
+        with tf.name_scope('data'):
+            self.x = tf.placeholder(dtype=tf.float32, shape=[None, 784], name='x_placeholder')
+            self.y = tf.placeholder(dtype=tf.float32, shape=[None, 10], name='y_placeholder')
+            self.phase = tf.placeholder(tf.bool, name='phase')
 
-                self.dropout = tf.placeholder(dtype=tf.float32, name='dropout')
-                self.global_step = tf.Variable(0, dtype=tf.int32, trainable=False, name='global_step')
-                print('Completed defining parameters.')
+            self.dropout = tf.placeholder(dtype=tf.float32, name='dropout')
+            self.global_step = tf.Variable(0, dtype=tf.int32, trainable=False, name='global_step')
+            print('Completed defining parameters.')
 
-        elif self.config.dataset == 'cifar100':
-            with tf.name_scope('data'):
-                self.x = tf.placeholder(dtype=tf.float32, shape=[None, 32,32,3], name='x_placeholder')
-                self.y = tf.placeholder(dtype=tf.float32, shape=[None, 100], name='y_placeholder')
-                self.phase = tf.placeholder(tf.bool, name='phase')
-
-                self.dropout = tf.placeholder(dtype=tf.float32, name='dropout')
-                self.global_step = tf.Variable(0, dtype=tf.int32, trainable=False, name='global_step')
-                print('Completed defining parameters.')
-
-    def construct_graph(self): 
+    def construct_graph(self):
         # Create weights and do inference.
         # MODEL: conv -> relu -> pool -> conv -> relu -> pool -> fully connected -> softmax
 
         print('Constructing Simple CNN graph...')
-        self.cnn = SimpleCNN(input=self.x, 
+        self.cnn = SimpleCNN(input=self.x,
                              phase=self.phase,
                              dropout=self.dropout,
                              num_classes=self.N_CLASSES,
                              skip_layer=[''],
-                             weights_path='DEFAULT',
-                             config = self.config)
-    
+                             weights_path='DEFAULT')
+
     def construct_model(self):
         # Define the loss function.
         # Use softmax cross entropy with logits as the loss function. Compute mean cross entropy. Note that softmax is applied internally.
         print('Defining the model')
-        self.model = Model(self.cnn,config=self.config)
-
-        self.model.cross_entropy_loss(self.y)
+        self.model = Model(self.cnn, config=self.config)
 
         # If retraining the data, select trainable variables
         var_list = tf.trainable_variables()
 
         if self.retrain:
-            self.train_vars = [var for var in var_list if 'fc1'    in var.name]
-            self.model.optimizer(learning_rate=self.LEARNING_RATE, global_step=self.global_step, train_vars=self.train_vars)
+            self.train_vars = [var for var in var_list if 'fc1' in var.name]
+            self.model.l2_loss(self.y, self.train_vars)
+            self.model.optimizer(learning_rate=self.LEARNING_RATE, global_step=self.global_step,
+                                 train_vars=self.train_vars)
             # mnist = mnist_2
         else:
             self.model.optimizer(learning_rate=self.LEARNING_RATE, global_step=self.global_step, train_vars=var_list)
@@ -90,23 +80,23 @@ class Trainer(object):
     def define_summary(self):
         # Define summary of the model
         with tf.name_scope('summaries'):
-            tf.summary.scalar('loss', self.model.loss)
-            tf.summary.histogram('histogram loss', self.model.loss)
+            tf.summary.scalar('loss', self.model.l2_loss)
+            tf.summary.histogram('histogram loss', self.model.l2_loss)
             self.summary_op = tf.summary.merge_all()
 
         # Make directories for checkpoints
         utils.make_dir('checkpoints')
         utils.make_dir('checkpoints/convnet_mnist')
 
-    def restore(self): 
-        saver = tf.train.Saver() 
+    def restore(self):
+        saver = tf.train.Saver()
         checkpoint = tf.train.get_checkpoint_state(os.path.dirname('checkpoints/convnet_mnist/checkpoint'))
         saver.restore(self.sess, checkpoint.model_checkpoint_path)
 
-    def train(self, source): 
+    def train(self, source):
         # Train/test the model.
         # with tf.Session() as self.sess:
-        with self.sess.as_default():  
+        with self.sess.as_default():
             # Initialize variables
             print('Beginning session...')
             self.sess.run(tf.global_variables_initializer())
@@ -131,49 +121,49 @@ class Trainer(object):
             initial_step = self.global_step.eval()
             start_time = time.time()
 
-            dataset = source
-            num_batches = int(dataset.train.num_examples / self.BATCH_SIZE)
+            mnist = source
+            num_batches = int(mnist.train.num_examples / self.BATCH_SIZE)
             total_loss = 0.0
 
             # Train the model N_EPOCHS times
             for index in range(initial_step, num_batches * self.N_EPOCHS):
-                x_batch, y_batch = dataset.train.next_batch(self.BATCH_SIZE)
+                x_batch, y_batch = mnist.train.next_batch(self.BATCH_SIZE)
 
                 _, loss_batch, summary = self.sess.run(
-                                    [self.model.optimizer, self.model.loss, self.summary_op],
-                                    feed_dict={self.x: x_batch,
-                                                self.y: y_batch,
-                                                self.phase: 1,
-                                                self.dropout: self.DROPOUT})
+                    [self.model.optimizer, self.model.l2_loss, self.summary_op],
+                    feed_dict={self.x: x_batch,
+                               self.y: y_batch,
+                               self.phase: 1,
+                               self.dropout: self.DROPOUT})
 
                 writer.add_summary(summary, global_step=index)
                 total_loss += loss_batch
 
                 # Print out average loss after 10 steps
                 if (index + 1) % self.SKIP_STEP == 0:
-                    print('Average loss at step {}: {:5.1f}'.format(index + 1, total_loss/self.SKIP_STEP))
+                    print('Average loss at step {}: {:5.1f}'.format(index + 1, total_loss / self.SKIP_STEP))
                     total_loss = 0.0
                     saver.save(self.sess, 'checkpoints/convnet_mnist/mnist-convnet', index)
 
             print('Optimization Finished!')
-            print('Total time: {0} seconds'.format(time.time()- start_time))
+            print('Total time: {0} seconds'.format(time.time() - start_time))
 
-    def test(self, target): 
+    def test(self, target):
         # Test the model
-        with self.sess.as_default(): 
+        with self.sess.as_default():
             print('Testing the model...')
-            mnist = target 
-            num_batches = int(mnist.test.num_examples/self.BATCH_SIZE)
+            mnist = target
+            num_batches = int(mnist.test.num_examples / self.BATCH_SIZE)
             total_correct_preds = 0
 
             for i in range(num_batches):
                 x_batch, y_batch = mnist.test.next_batch(self.BATCH_SIZE)
-                loss_batch, logits_batch = self.sess.run(
-                                    [ self.model.loss, self.model.classifier.get_scores()],
-                                    feed_dict={self.x: x_batch, 
-                                            self.y: y_batch,
-                                            self.phase: 0, 
-                                            self.dropout: 1.0})
+                _, loss_batch, logits_batch = self.sess.run(
+                    [self.model.optimizer, self.model.loss, self.model.classifier.get_scores()],
+                    feed_dict={self.x: x_batch,
+                               self.y: y_batch,
+                               self.phase: 0,
+                               self.dropout: 1.0})
 
                 # Calculate the total correct predictions
                 preds = tf.nn.softmax(logits_batch)
@@ -181,5 +171,5 @@ class Trainer(object):
                 accuracy = tf.reduce_sum(tf.cast(correct_preds, tf.float32))
                 total_correct_preds += self.sess.run(accuracy)
 
-            print('Accuracy {0}'.format(total_correct_preds/mnist.test.num_examples))
-        self.sess.close() 
+            print('Accuracy {0}'.format(total_correct_preds / mnist.test.num_examples))
+        self.sess.close()

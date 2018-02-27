@@ -2,13 +2,14 @@ import tensorflow as tf
 import numpy as np 
 
 class Model(object): 
-    def __init__(self, classifier):
-        self.classifier = classifier 
+    def __init__(self, classifier, config):
+        self.classifier = classifier
+        self.config = config
 
     
     def compute_gradients(self, tensor, var_list):
-    	grads = tf.gradients(tensor, var_list)
-    	return [grad if grad is not None else tf.zeros_like(var)
+        grads = tf.gradients(tensor, var_list)
+        return [grad if grad is not None else tf.zeros_like(var)
           for var, grad in zip(var_list, grads)]
 
     def compute_fisher(self, trainer, dataset, sess, num_samples=200): 
@@ -84,13 +85,25 @@ class Model(object):
         """
         Elastic weight consolidation. 
         """
-        # Initialize loss function 
+        # Initialize loss function
+
         self.cross_entropy_loss(y)
         self.ewc_loss = self.loss
         
         for var in range(len(self.variable_list)): 
             self.ewc_loss += (fisher_multiplier / 2) * tf.reduce_sum(tf.multiply(self.F_matrix[var].astype(np.float32),tf.square(self.variable_list[var] - self.star_vars[var])))  
-    
+
+    def l2_loss(self,y, train_vars):
+        """
+        L2 loss. adjust lambda in config
+        """
+        self.cross_entropy_loss(y)
+        self.l2_loss = self.loss
+
+        for var in range(len(train_vars)):
+
+            self.l2_loss += self.config.l2_lambda*tf.nn.l2_loss(train_vars[var])
+
     def cross_entropy_loss(self, y):
         with tf.name_scope('loss'): 
             entropy = tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=self.classifier.get_scores())
@@ -100,12 +113,27 @@ class Model(object):
         # NOTE: when training, the moving_mean and moving_variance need to be updated. By default the update ops are placed in tf.GraphKeys.UPDATE_OPS, so they need to be added as a dependency to the train_op.(https://www.tensorflow.org/api_docs/python/tf/layers/batch_normalization)
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         
-        with tf.control_dependencies(update_ops), tf.name_scope('optimize'): 
-            self.optimizer = tf.train.AdamOptimizer(learning_rate).minimize(self.loss, global_step=global_step, var_list=train_vars)
+        #select optimizer
+        if self.config.optimizer == 'sgd':
+            optim = tf.train.MomentumOptimizer(learning_rate, 0.9)
+        elif self.config.optimizer == 'adam':
+            optim = tf.train.AdamOptimizer(learning_rate)
+        else:
+            raise Exception("[!] Caution! Don't use {} opimizer.".format(self.config.optimizer))
+
+        with tf.control_dependencies(update_ops), tf.name_scope('optimize'):
+            self.optimizer = optim.minimize(self.loss, global_step=global_step, var_list=train_vars)
 
     def optimizer_ewc(self, learning_rate, global_step, train_vars): 
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         
-        with tf.control_dependencies(update_ops), tf.name_scope('optimize'): 
-            self.optimizer = tf.train.AdamOptimizer(learning_rate).minimize(self.ewc_loss, global_step=global_step, var_list=train_vars)
+        # select optimizer
+        if self.config.optimizer == 'sgd':
+            optim = tf.train.MomentumOptimizer(learning_rate, 0.9)
+        elif self.config.optimizer == 'adam':
+            optim = tf.train.AdamOptimizer(learning_rate)
+        else:
+            raise Exception("[!] Caution! Don't use {} opimizer.".format(self.optimizer))
 
+        with tf.control_dependencies(update_ops), tf.name_scope('optimize'):
+            self.optimizer = optim.minimize(self.ewc_loss, global_step=global_step, var_list=train_vars)

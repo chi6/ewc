@@ -1,4 +1,5 @@
-from trainer import Trainer 
+import tensorflow as tf
+from trainer_l2 import Trainer
 from data_handler import DataHandler
 from config import get_config
 
@@ -12,7 +13,8 @@ data_handler = DataHandler(config.dataset)
 mnist, mnist_2 = data_handler.split_dataset() # Train on 1-4
 # mnist_2, mnist = data_handler.split_dataset() # Train on 5-9
 
-# Test MNIST 0-4 post transfer
-trainer = Trainer(retrain=True,config = config)
-trainer.restore()
-trainer.test(mnist)
+# Retrain/test the network on MNIST 5-9
+trainer = Trainer(retrain=True,config=config)
+
+trainer.train(mnist_2)
+trainer.test(mnist_2)
